@@ -6,11 +6,15 @@ import shutil
 from groq import Groq
 from crewai import Agent, Task, Crew
 
-with open('groq_api', 'r') as f:
-    _api_key_ = f.read().strip()
+# with open('groq_api', 'r') as f:
+#     _api_key_ = f.read().strip()
+
+# client = Groq(
+#     api_key = _api_key_
+# )
 
 client = Groq(
-    api_key = _api_key_
+    api_key = os.environ.get("GROQ_API_KEY")
 )
 
 
