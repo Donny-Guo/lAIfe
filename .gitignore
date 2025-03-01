@@ -1,7 +1,7 @@
-<<<<<<< HEAD
+# backend
 env/
 backend/__pycache__/
-=======
+
 # Logs
 logs
 *.log
@@ -26,4 +26,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
->>>>>>> 01a871b (frontend)
