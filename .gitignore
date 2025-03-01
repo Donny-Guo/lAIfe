@@ -1,6 +1,9 @@
 # backend
 env/
 backend/__pycache__/
+groq_api
+chat.db
+check.txt
 
 # Logs
 logs
