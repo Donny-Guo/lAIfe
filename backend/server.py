@@ -4,7 +4,7 @@ import base64
 import os
 import shutil
 from groq import Groq
-from flask_cors import CORS
+from crewai import Agent, Task, Crew
 
 with open('groq_api', 'r') as f:
     _api_key_ = f.read().strip()
@@ -13,8 +13,28 @@ client = Groq(
     api_key = _api_key_
 )
 
+
+agent1 = Agent(
+    role="Narrator",
+    goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
+    memory=True,
+    backstory="An expert AI researcher specializing in structured data analysis.",
+    llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
+)
+
+agent2 = Agent(
+    role="Predictor",
+    goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
+    memory=True,
+    backstory="A professional AI writer skilled in summarizing complex content.",
+    llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
+)
+
+
 app = Flask(__name__)
 media_path = "./deepseek_media"
+from flask_cors import CORS
+CORS(app)
 
 @app.route("/chat", methods=["POST"])
 def chat():
