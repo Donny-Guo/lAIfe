@@ -13,6 +13,7 @@ Setup:
 
 ## Project Structure
 
+```
 
 ├── frontend/              # React frontend
 │   ├── public/
@@ -39,3 +40,6 @@ Setup:
 │   └── .gitignore
 │
 └── README.md              # Project documentation
+```
+
+
