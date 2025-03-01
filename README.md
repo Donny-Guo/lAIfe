@@ -6,6 +6,7 @@ Setup:
 2. `python -m venv env`
 3. `source env/bin/activate`
 4. `pip install -r requirements.txt`
+5. `cd frontend` and `npm install` 
 
 
 
@@ -22,7 +23,7 @@ Run the React development server:
 
 ```
 cd frontend
-npm start
+npm run dev
 ```
 
 
