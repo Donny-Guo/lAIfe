@@ -6,7 +6,9 @@ export default function Startpage() {
     const choices = ["Nomad", "Street Kid", "Corporate"];
 
     return (
+
         <div className="p-6 text-center">
+            <title>Welcome to the Night City</title>
             <h1 className="text-2xl mb-4">Welcome to Night City</h1>
             <h2 className="text-2xl mb-4">Please choose your role</h2>
             {choices.map((choice, index) => (
