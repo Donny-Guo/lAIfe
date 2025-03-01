@@ -9,6 +9,22 @@ Setup:
 
 
 
+Start:
+
+Run the Flask backend:
+
+```
+cd backend
+python server.py
+```
+
+Run the React development server:
+
+```
+cd frontend
+npm start
+```
+
 
 
 ## Project Structure
