@@ -6,6 +6,8 @@ export default function Gamepage() {
     const location = useLocation();
 
     const [step, setStep] = useState(0); 
+    let sys_pmt = location.state.description;
+    const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
     const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
     const [choices, setChoices] = useState<string[]>(["Start"]);
     const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []);
@@ -23,7 +25,7 @@ export default function Gamepage() {
                     const questionResponse = await fetch("http://127.0.0.1:5000/generate_question", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ context }),
+                        body: JSON.stringify({ sys_pmt: sys_pmt+"\n"+base_sys_pmt, context }),
                     });
                     if (!questionResponse.ok) throw new Error("Failed to load question.");
                     const questionData = await questionResponse.json();
@@ -32,7 +34,7 @@ export default function Gamepage() {
                     const choicesResponse = await fetch("http://127.0.0.1:5000/generate_choices", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ question: questionData.question, context }),
+                        body: JSON.stringify({ question: questionData.question, context, sys_pmt: sys_pmt+"\n"+base_sys_pmt, }),
                     });
                     if (!choicesResponse.ok) throw new Error("Failed to load choices.");
                     const choicesData = await choicesResponse.json();
@@ -57,11 +59,25 @@ export default function Gamepage() {
         if (error) navigate("/end", { state: { history } });
     }, [error, navigate, history]);
 
-    const handleChoice = (choice: string) => {
+    const handleChoice = async (choice: string, index: number) => {
+
         if (step === 0) {
             setStep(1);
         } else {
-            setHistory(prevHistory => [...prevHistory, choice]);
+            const choiceData = {
+                question: question,
+                selection: index, // Store selected choice index (1-based)
+                // option_choice: choice,  // Store selected choice text
+                choices: choices // Store all choices
+            };
+            // const saveResponse = await fetch("http://127.0.0.1:5000/save_chat", {
+            //     method: "POST",
+            //     headers: { "Content-Type": "application/json" },
+            //     body: JSON.stringify(choiceData),
+            // }); 
+            // if (!saveResponse.ok) throw new Error("Failed to save.");
+
+            setHistory(prevHistory => [...prevHistory, choice]); // Store choice index (1-based)
             setStep(prevStep => prevStep + 1);
         }
     };
@@ -79,9 +95,9 @@ export default function Gamepage() {
                         <button
                             key={index}
                             className="w-64 p-3 my-2 bg-green-500 text-white rounded text-lg"
-                            onClick={() => handleChoice(choice)}
+                            onClick={() => handleChoice(choice, index)}
                         >
-                            {choice}
+                            {index}. {choice}
                         </button>
                     ))}
                 </>
