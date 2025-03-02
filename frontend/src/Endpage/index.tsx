@@ -13,6 +13,7 @@ export default function Endpage() {
 
     // State to store the image URL from the backend
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [summary, setSummary] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -37,6 +38,31 @@ export default function Endpage() {
         };
 
         fetchImage();
+
+        const fetchSummary = async () => {
+            try {
+                const response = await fetch("http://10.0.0.182:5000/generate_summary", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ history, health, wealth, intelligence }),
+                });
+
+                if (!response.ok) throw new Error("Failed to summary.");
+
+                const summaryData = await response.json();
+
+                setSummary(summaryData.summary);
+
+            } catch (err) {
+
+                console.log("summary not shown, but everything is fine!");
+                /* setError("Could not load image. Please try again."); */
+            }
+        };
+
+        fetchSummary();
+
+
     }, [history, health, wealth, intelligence]);
 
     return (
@@ -60,6 +86,9 @@ export default function Endpage() {
                     <h1 className="text-3xl font-bold mb-6 bg-black bg-opacity-50 p-4 rounded-lg">
                         Your Life Story
                     </h1>
+
+                    <p className="text-2xl font-semibold mb-6">{summary}</p>
+
                     <button
                         className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg text-lg"
                         onClick={() => navigate("/")}

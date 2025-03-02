@@ -24,8 +24,8 @@ export default function Gamepage() {
     const [intelligence, setIntelligence] = useState<number>(location.state?.intelligence || "33");
     const lifeStages = [
         "0 month - 3 yr",
-        "3yr - 6yr",
-        "6yr - 12yr: primary schooler",
+        // "3yr - 6yr",
+        // "6yr - 12yr: primary schooler",
         // "12yr - 18yr: high schooler",
         // "18yr - 22yr: College student",
         // "22yr - 25 yr: Master/Doctoral student",
@@ -119,13 +119,14 @@ export default function Gamepage() {
 
     return (
         <div className="p-6 flex flex-col justify-center items-center h-screen">
+            <title>LAIfe in Progress</title>
             {loading ? (
                 <p className="text-xl font-semibold">Loading...</p>
             ) : error ? (
                 <p className="text-xl text-red-500">{error}</p>
             ) : (
                 <>
-                    <table p className="text-red-500">
+                    <tbody className="text-red-500">
                         <tr>
                             <td>
                                 ❤️ Health: {health}
@@ -139,7 +140,7 @@ export default function Gamepage() {
                                 🧠 Intelligence: {intelligence}
                             </td>
                         </tr>
-                    </table>
+                    </tbody>
                     {/* <p className="text-yellow-500">💰 Wealth: {wealth}</p>
                         <p className="text-blue-500">🧠 Intelligence: {intelligence}</p> */}
 
