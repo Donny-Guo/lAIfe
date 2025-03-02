@@ -5,17 +5,48 @@ export default function Gamepage() {
     const navigate = useNavigate();
     const location = useLocation();
 
+<<<<<<< HEAD
     const [step, setStep] = useState(0);
     let sys_pmt = location.state.description;
     const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
+=======
+    const [step, setStep] = useState(0); 
+    // let sys_pmt = location.state.description;
+    // const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
+>>>>>>> refs/remotes/origin/main
     const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
     const [choices, setChoices] = useState<string[]>(["Start"]);
-    const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []);
+    const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state.description] : []);
+<!--     const [question, setQuestion] = useState<string | null>("I am at the age of 0-3yrs old.");
+    // const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
+    const [choices, setChoices] = useState<string[]>(["Start"]);
+    const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state?.description] : []);
+    // const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []); -->
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [health, setHealth] = useState<number>(location.state?.health || "33");
+    const [wealth, setWealth] = useState<number>(location.state?.wealth || "33");
+    const [paramsDiff, setParamsDiff] = useState<number[][]>([])  // array, value corresponding to [health, wealth, intelligence]
+    const [intelligence, setIntelligence] = useState<number>(location.state?.intelligence || "33");
+    const lifeStages = [
+        "0 month - 3 yr",
+        "3yr - 6yr",
+        "6yr - 12yr: primary schooler",
+        "12yr - 18yr: high schooler",
+        "18yr - 22yr: College student",
+        "22yr - 25 yr: Master/Doctoral student",
+        "25yr - 35yr: child or not",
+        "35yr - 50yr: parenthood",
+        "50yr - 65yr: grandchild or not",
+        "Young-old (65–74 years): Retirement",
+        "Middle-old (75–84 years)",
+        "Old-old (85+ years): death"
+    ];
+    
 
     useEffect(() => {
         if (step > 0) {
+            let curStage = lifeStages[step - 1];
             const fetchQuestionAndChoices = async () => {
                 setLoading(true);
                 setError(null);
@@ -25,7 +56,11 @@ export default function Gamepage() {
                     const questionResponse = await fetch("http://127.0.0.1:5000/generate_question", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
                         body: JSON.stringify({ sys_pmt: sys_pmt + "\n" + base_sys_pmt, context }),
+=======
+                        body: JSON.stringify({  context, curStage, health, wealth, intelligence  }),
+>>>>>>> refs/remotes/origin/main
                     });
                     if (!questionResponse.ok) throw new Error("Failed to load question.");
                     const questionData = await questionResponse.json();
@@ -34,7 +69,11 @@ export default function Gamepage() {
                     const choicesResponse = await fetch("http://127.0.0.1:5000/generate_choices", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
                         body: JSON.stringify({ question: questionData.question, context, sys_pmt: sys_pmt + "\n" + base_sys_pmt, }),
+=======
+                        body: JSON.stringify({ question: questionData.question, context, curStage, health, wealth, intelligence }),
+>>>>>>> refs/remotes/origin/main
                     });
                     if (!choicesResponse.ok) throw new Error("Failed to load choices.");
                     const choicesData = await choicesResponse.json();
@@ -44,6 +83,8 @@ export default function Gamepage() {
                     //     body: JSON.stringify({question: questionData.question, choices: choicesData.choices})
                     // })
                     setChoices(choicesData.choices);
+                    setParamsDiff(choicesData.effects);
+                    
                 } catch (err) {
                     setError("Could not load question. Please try again.");
                 } finally {
@@ -79,6 +120,9 @@ export default function Gamepage() {
 
             setHistory(prevHistory => [...prevHistory, choice]); // Store choice index (1-based)
             setStep(prevStep => prevStep + 1);
+            setHealth(health => health + paramsDiff[index][0])
+            setWealth(wealth => wealth + paramsDiff[index][1])
+            setIntelligence(intelligence => intelligence + paramsDiff[index][2])
         }
     };
 
@@ -91,7 +135,16 @@ export default function Gamepage() {
                 <p className="text-xl text-red-500">{error}</p>
             ) : (
                 <>
+<<<<<<< HEAD
                     <p className="text-2xl font-semibold mb-6">{question}</p>
+=======
+                    <div className="mb-6 flex gap-4 text-lg font-semibold">
+                        <p className="text-red-500">❤️ Health: {health}</p>
+                        <p className="text-yellow-500">💰 Wealth: {wealth}</p>
+                        <p className="text-blue-500">🧠 Intelligence: {intelligence}</p>
+                    </div>
+                    <h1 className="text-2xl font-semibold mb-6">{question}</h1>
+>>>>>>> refs/remotes/origin/main
                     {choices.map((choice, index) => (
                         <button
                             key={index}

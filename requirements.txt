@@ -1,3 +1,4 @@
 Flask
 groq
 flask_cors
+numpy

@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify, send_file
 import sqlite3
-import base64
 import os
 import shutil
+import numpy as np
 from groq import Groq
-from crewai import Agent, Task, Crew
+# from crewai import Agent, Task, Crew
 
 # with open('groq_api', 'r') as f:
 #     _api_key_ = f.read().strip()
@@ -18,21 +18,21 @@ client = Groq(
 )
 
 
-agent1 = Agent(
-    role="Narrator",
-    goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
-    memory=True,
-    backstory="An expert AI researcher specializing in structured data analysis.",
-    llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
-)
+# agent1 = Agent(
+#     role="Narrator",
+#     goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
+#     memory=True,
+#     backstory="An expert AI researcher specializing in structured data analysis.",
+#     llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
+# )
 
-agent2 = Agent(
-    role="Predictor",
-    goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
-    memory=True,
-    backstory="A professional AI writer skilled in summarizing complex content.",
-    llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
-)
+# agent2 = Agent(
+#     role="Predictor",
+#     goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
+#     memory=True,
+#     backstory="A professional AI writer skilled in summarizing complex content.",
+#     llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
+# )
 
 
 app = Flask(__name__)
@@ -40,119 +40,182 @@ media_path = "./deepseek_media"
 from flask_cors import CORS
 CORS(app)
 
-@app.route("/chat", methods=["POST"])
-def chat():
-    # Get JSON data from the request
-    data = request.get_json()
-    user_input = data.get("user_input")
+# @app.route("/chat", methods=["POST"])
+# def chat():
+#     # Get JSON data from the request
+#     data = request.get_json()
+#     user_input = data.get("user_input")
     
-    # Return an error if no input is provided
-    if not user_input:
-        return jsonify({"error": "No user input provided"}), 400
+#     # Return an error if no input is provided
+#     if not user_input:
+#         return jsonify({"error": "No user input provided"}), 400
 
-    # Send the user input to the llama model
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "system",
-                "content":"",
-            },
-            {
-                "role": "user",
-                "content": user_input,
-            }
-        ],
-        model="llama-3.3-70b-versatile",
-    )
+#     # Send the user input to the llama model
+#     chat_completion = client.chat.completions.create(
+#         messages=[
+#             {
+#                 "role": "system",
+#                 "content":"",
+#             },
+#             {
+#                 "role": "user",
+#                 "content": user_input,
+#             }
+#         ],
+#         model="llama-3.3-70b-versatile",
+#     )
     
-    # Return the response from the model as JSON
-    assistant_response = chat_completion.choices[0].message.content
-    return jsonify({"response": assistant_response})
+#     # Return the response from the model as JSON
+#     assistant_response = chat_completion.choices[0].message.content
+#     return jsonify({"response": assistant_response})
 
 @app.route("/generate_question", methods=["POST"])
 def generate_question():
     data = request.get_json()
     context = data.get("context", "")
-    system_prompt = data.get("sys_pmt", "")
+    # system_prompt = data.get("sys_pmt", "")
+    curStage = data.get("curStage", "")
+    curParameters = json.dumps(data.get("params",""))
     # Construct a prompt for the question-generating robot
-    prompt = f"Based on the following context, generate an engaging and clear question:\nContext: {context}"
+    prompt = (
+        f"current life stage: {curStage}\n"
+        f"Context: {context}\n"
+        f"params: {curParameters}\n"
+        "Please list each answer on a new line."
+    )
+
     
     try:
         chat_completion = client.chat.completions.create(
             messages=[
                 {
-                "role": "system",
-                "content":"",
+                    "role": "system",
+                    "content":"""You are a playful life-simulator guide. Based on the user’s life experiences and the context provided, craft a concise, engaging question that reflects their 
+                                current life stage and parameters. This question must incorporate:
+                                A reference to at least one significant past experience or relationship from the user’s context (e.g., a childhood friend).
+                                A large-scale, externally driven event that significantly affects the user’s life but isn’t directly caused by them (e.g., war).
+                                For instance: ‘Your childhood best friend proposes marriage, but a war breaks out and threatens your community.’
+                                Ensure the question encourages thoughtful consideration of how personal choices intersect with broader circumstances outside the user’s control.\n""",
                 },
-                {"role": "user", "content": prompt}
-                ],
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
             model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
         )
         question = chat_completion.choices[0].message.content.strip()
-        print(f"Generated question: {question}")  # For debugging/logging
+        # print(f"Generated question: {question}")  # For debugging/logging
         return jsonify({"question": question})
     except Exception as e:
         print(f"Error generating question: {str(e)}")
         return jsonify({"error": "Failed to generate question"}), 500
-    
-
-    
 
 @app.route("/generate_choices", methods=["POST"])
 def generate_choices():
     data = request.get_json()
     question = data.get("question")
     context = data.get("context", "")
-    system_prompt = data.get("sys_pmt", "")
+    # system_prompt = data.get("sys_pmt", "")
+    curStage = data.get("curStage", "")
+    curParameters = json.dumps(data.get("params",""))
     if not question:
         return jsonify({"error": "No question provided"}), 400
 
     # Construct a prompt for the choices-generating robot.
     # The prompt asks for 4 distinct answer choices.
     prompt = (
-        f"Generate 4 distinct answer choices for the following question:\n"
-        f"Question: '{question}'\n"
+        f"Current Life Stage: {curStage}\n"
         f"Context: {context}\n"
-        "Please list each answer on a new line."
+        f"Question: \"{question}\"\n"
+        f"Parameters (Health, Wealth, Intelligence): {curParameters}\n"
+        "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
+        "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
+        "Effect values should be integers between -2 and 2."
     )
     
     try:
         chat_completion = client.chat.completions.create(
             messages=[
                 {
-                "role": "system",
-                "content":"",
+                    "role": "system",
+                    "content":f"You are a playful life-simulator guide. Based on the user’s life context and question, generate exactly four life-changing choices for their current life stage. For each choice, include a potential effect value (ranging from -2 to 2) on the relevant parameters. Keep the tone imaginative and fun, but ensure the choices align with the context and parameters provided.:\n",
                 },
-                {"role": "user", "content": prompt}
-                ],
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
             model="llama-3.3-70b-versatile",
         )
         response_text = chat_completion.choices[0].message.content.strip()
-        print(f"Generated choices raw response: {response_text}")  # Debug output
+        print(f"Generated choices raw response:\n{response_text}")  # Debug output
 
-        # Process the returned text to extract individual choices.
-        lines = response_text.split("\n")
+        # **Extracting choices and effects**
         choices = []
-        for line in lines:
+        effects = []
+
+        for line in response_text.split("\n"):
             line = line.strip()
-            # Remove any numbering or bullet formatting if present
-            if line and (line[0].isdigit() or line.startswith("-")):
-                if "." in line:
-                    line = line.split(".", 1)[-1].strip()
-                elif "-" in line:
-                    line = line.split("-", 1)[-1].strip()
-            if line:
-                choices.append(line)
-        # Fallback: if not enough choices, try splitting by comma.
+            if line and "|" in line:  
+                try:
+                    choice_text, effects_text = line.split("|")
+                    choice_text = choice_text.strip()
+                    effects_values = [int(x) for x in effects_text.replace("Effects:", "").strip().split(",")]
+
+                    if len(effects_values) == 3:  
+                        choices.append(choice_text)
+                        effects.append(effects_values)
+                except Exception as e:
+                    print(f"Error parsing line: {line}, Error: {e}")
+
+        # **Ensure we have exactly 4 valid choices**
         if len(choices) < 4:
-            choices = [choice.strip() for choice in response_text.split(",") if choice.strip()]
-        return jsonify({"choices": choices[:4]})
+            return jsonify({"error": "Not enough valid choices generated", "raw_output": response_text}), 500
+
+        return jsonify({"choices": choices[:4], "effects": effects[:4]})
+
     except Exception as e:
         print(f"Error generating choices: {str(e)}")
         return jsonify({"error": "Failed to generate choices"}), 500
 
+# initialize three parameters of the character and family background
+@app.route("/init", methods=["GET"])
+def init_status():
+    try:
+        health, money, wisdom = np.random.randint(low=1, high=21, size=3, dtype=int)
+        bg_prompt = ("Generate 5 different family background (what is the family look like) for me"
+                    "when a child is born in America. You need to include the following aspects: "
+                    "Parental Resources and Wellbeing, Parental Health, Family Structure, Parental Education,"
+                    "Parental Age, Socioeconomic Status, Cultural and Ethnic Background, Religious Background,"
+                    "Extended Family, Home Environment, Parental Relationships. Describe each background in"
+                    "an autobiographical manner in a few sentences and separated by a new line. No extra words needed.")
+        while True:
+            # ask llm to generate 5 distinct family background
+            chat_completion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": bg_prompt}],
+                    model="llama-3.3-70b-versatile",
+                    timeout=20
+                )
+            response_text = chat_completion.choices[0].message.content.strip()
+            if len(response_text) > 10:
+                # print(f"response_text: {response_text}")
+                break
 
-
+        backgrounds = response_text.split("\n")
+        while True:
+            selected_background = backgrounds[np.random.randint(low=0, high=len(backgrounds), dtype=int)]
+            if selected_background: break
+        print(f"selected_background: {selected_background}")
+        return jsonify({"selected_background": selected_background,
+                        "health": int(health),
+                        "money": int(money),
+                        "wisdom": int(wisdom)})
+    except Exception as e:
+        # Log the error
+        print(f"Error in /init: {str(e)}")
+        # Return a proper error response
+        return jsonify({"error": "Failed to generate data"}), 500
 
 def delete_folder(folder_path):
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
