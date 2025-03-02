@@ -6,11 +6,11 @@ export default function Gamepage() {
     const location = useLocation();
 
     const [step, setStep] = useState(0); 
-    let sys_pmt = location.state.description;
-    const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
-    const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
+    const [question, setQuestion] = useState<string | null>("I am at the age of 0-3yrs old.");
+    // const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
     const [choices, setChoices] = useState<string[]>(["Start"]);
-    const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []);
+    const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state?.description] : []);
+    // const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
