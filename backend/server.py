@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify, send_file
 import sqlite3
-import base64
 import os
 import shutil
+import numpy as np
 from groq import Groq
-from crewai import Agent, Task, Crew
+# from crewai import Agent, Task, Crew
 
 # with open('groq_api', 'r') as f:
 #     _api_key_ = f.read().strip()
@@ -83,6 +83,7 @@ def generate_question():
         f"params: {curParameters}\n"
         "Please list each answer on a new line."
     )
+
     
     try:
         chat_completion = client.chat.completions.create(
@@ -109,9 +110,6 @@ def generate_question():
     except Exception as e:
         print(f"Error generating question: {str(e)}")
         return jsonify({"error": "Failed to generate question"}), 500
-    
-
-    
 
 @app.route("/generate_choices", methods=["POST"])
 def generate_choices():
@@ -181,6 +179,43 @@ def generate_choices():
         print(f"Error generating choices: {str(e)}")
         return jsonify({"error": "Failed to generate choices"}), 500
 
+# initialize three parameters of the character and family background
+@app.route("/init", methods=["GET"])
+def init_status():
+    try:
+        health, money, wisdom = np.random.randint(low=1, high=21, size=3, dtype=int)
+        bg_prompt = ("Generate 5 different family background (what is the family look like) for me"
+                    "when a child is born in America. You need to include the following aspects: "
+                    "Parental Resources and Wellbeing, Parental Health, Family Structure, Parental Education,"
+                    "Parental Age, Socioeconomic Status, Cultural and Ethnic Background, Religious Background,"
+                    "Extended Family, Home Environment, Parental Relationships. Describe each background in"
+                    "an autobiographical manner in a few sentences and separated by a new line. No extra words needed.")
+        while True:
+            # ask llm to generate 5 distinct family background
+            chat_completion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": bg_prompt}],
+                    model="llama-3.3-70b-versatile",
+                    timeout=20
+                )
+            response_text = chat_completion.choices[0].message.content.strip()
+            if len(response_text) > 10:
+                # print(f"response_text: {response_text}")
+                break
+
+        backgrounds = response_text.split("\n")
+        while True:
+            selected_background = backgrounds[np.random.randint(low=0, high=len(backgrounds), dtype=int)]
+            if selected_background: break
+        print(f"selected_background: {selected_background}")
+        return jsonify({"selected_background": selected_background,
+                        "health": int(health),
+                        "money": int(money),
+                        "wisdom": int(wisdom)})
+    except Exception as e:
+        # Log the error
+        print(f"Error in /init: {str(e)}")
+        # Return a proper error response
+        return jsonify({"error": "Failed to generate data"}), 500
 
 def delete_folder(folder_path):
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
