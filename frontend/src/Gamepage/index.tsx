@@ -47,7 +47,7 @@ export default function Gamepage() {
                 try {
                     const context = history.join(" ") || "";
                     console.log(context)
-                    const questionResponse = await fetch("http://10.0.0.182:5000/generate_question", {
+                    const questionResponse = await fetch("http://localhost:5000/generate_question", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ context, curStage, health, wealth, intelligence }),
@@ -56,7 +56,7 @@ export default function Gamepage() {
                     const questionData = await questionResponse.json();
                     setQuestion(questionData.question);
 
-                    const choicesResponse = await fetch("http://10.0.0.182:5000/generate_choices", {
+                    const choicesResponse = await fetch("http://localhost:5000/generate_choices", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ question: questionData.question, context, curStage, health, wealth, intelligence }),

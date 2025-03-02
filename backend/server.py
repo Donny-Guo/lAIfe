@@ -81,7 +81,7 @@ def generate_question():
         f"current life stage: {curStage}\n"
         f"Context: {context}\n"
         f"params: {curParameters}\n"
-        "Please list each answer on a new line."
+        "Your response should be within 40 words."
     )
 
     
@@ -102,7 +102,7 @@ def generate_question():
                     "content": prompt
                 }
             ],
-            model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
+            model="llama3-70b-8192",  # Change to the appropriate model if needed
         )
         question = chat_completion.choices[0].message.content.strip()
         # print(f"Generated question: {question}")  # For debugging/logging
@@ -132,6 +132,7 @@ def generate_choices():
         "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
         "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
         "Effect values should be integers between -2 and 2."
+        "Each choice should not be over 25 words."
     )
     
     try:
@@ -146,7 +147,7 @@ def generate_choices():
                     "content": prompt
                 }
             ],
-            model="llama-3.3-70b-versatile",
+            model="llama3-70b-8192",
         )
         response_text = chat_completion.choices[0].message.content.strip()
         print(f"Generated choices raw response:\n{response_text}")  # Debug output
@@ -179,6 +180,23 @@ def generate_choices():
         print(f"Error generating choices: {str(e)}")
         return jsonify({"error": "Failed to generate choices"}), 500
     
+# @app.route("/generate_summary", methods=["POST"])
+# def generate_summary():
+#     data = request.get_json()
+#     history = data.get("history", [])
+#     wealth = data.get("wealth", 0)
+#     health = data.get("health", 0)
+#     intelligence = data.get("intelligence", 0)
+#     lifeStory = ', '.join(history)
+#     prompt = (
+#         f"Current Life Stage: {curStage}\n"
+#         f"Context: {context}\n"
+#         f"Question: \"{question}\"\n"
+#         f"Parameters (Health, Wealth, Intelligence): {curParameters}\n"
+#         "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
+#         "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
+#         "Effect values should be integers between -2 and 2."
+#     )
 @app.route("/generate_summary", methods=["POST"])
 def generate_summary():
     data = request.get_json()
@@ -188,14 +206,28 @@ def generate_summary():
     intelligence = data.get("intelligence", 0)
     lifeStory = ', '.join(history)
     prompt = (
-        f"Current Life Stage: {curStage}\n"
-        f"Context: {context}\n"
-        f"Question: \"{question}\"\n"
-        f"Parameters (Health, Wealth, Intelligence): {curParameters}\n"
-        "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
-        "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
-        "Effect values should be integers between -2 and 2."
+        f"life story: {lifeStory}\n"
+        f"wealth: {wealth}\n"
+        f"health: {health}\n"
+        f"intelligence: {intelligence}\n"
+        "Below is a player's life story along with their final scores in key attributes. Please generate a compelling and insightful summary of their life journey, highlighting significant themes, achievements, and challenges. Do it within 100 words."
     )
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
+            model="llama3-70b-8192",  # Change to the appropriate model if needed
+        )
+        question = chat_completion.choices[0].message.content.strip()
+        # print(f"Generated question: {question}")  # For debugging/logging
+        return jsonify({"summary": question})
+    except Exception as e:
+        print(f"Error generating question: {str(e)}")
+        return jsonify({"error": "Failed to generate question"}), 500
 
 # initialize three parameters of the character and family background
 @app.route("/init", methods=["GET"])
@@ -212,7 +244,7 @@ def init_status():
             # ask llm to generate 5 distinct family background
             chat_completion = client.chat.completions.create(
                     messages=[{"role": "user", "content": bg_prompt}],
-                    model="llama-3.3-70b-versatile",
+                    model="llama3-70b-8192",
                     timeout=20
                 )
             response_text = chat_completion.choices[0].message.content.strip()

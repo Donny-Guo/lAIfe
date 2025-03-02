@@ -19,7 +19,7 @@ export default function Endpage() {
     useEffect(() => {
         const fetchImage = async () => {
             try {
-                const response = await fetch("http://10.0.0.182:5000/generate_summary_image", {
+                const response = await fetch("http://localhost:5000/generate_summary_image", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ history, health, wealth, intelligence }),
@@ -39,12 +39,12 @@ export default function Endpage() {
 
         fetchImage();
 
-
+        fetchSummary();
     }, [history, health, wealth, intelligence]);
 
     const fetchSummary = async () => {
         try {
-            const response = await fetch("http://10.0.0.182:5000/generate_summary", {
+            const response = await fetch("http://localhost:5000/generate_summary", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ history, health, wealth, intelligence }),
@@ -63,7 +63,7 @@ export default function Endpage() {
         }
     };
 
-    fetchSummary();
+    
 
 
 
