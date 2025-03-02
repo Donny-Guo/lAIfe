@@ -3,7 +3,7 @@ import { useState } from "react";
 
 export default function Startpage() {
     const navigate = useNavigate();
-    
+
     const [selectedDescription, setSelectedDescription] = useState("");
 
     const choices = [
@@ -12,25 +12,27 @@ export default function Startpage() {
         { name: "Corporate", description: "You are a high-ranking employee in a ruthless megacorporation, operating in the gritty world of Cyberpunk 2077. You speak with cold precision and calculated politeness. Every interaction is a potential corporate transaction or power play. You constantly seek to protect and advance the corporation’s interests—even at the expense of others. Your language is filled with corporate jargon, and you maintain a veneer of professionalism regardless of the moral implications. In short, you are the epitome of a loyal company operative, always mindful of public image, profit, and leverage." }
     ];
 
-    const handleChoice = (choice) => {
-        setSelectedDescription(choice.description); 
+    const handleChoice = (choice: { name: any; description: any; }) => {
+        setSelectedDescription(choice.description);
         navigate("/game", { state: { choice: choice.name, description: choice.description } });
     };
 
     return (
         <div className="p-6 text-center">
-            <title>Welcome to the Night City</title>
-            <h1 className="text-2xl mb-4">Welcome to Night City</h1>
-            <h2 className="text-2xl mb-4">Please choose your role</h2>
-            {choices.map((choice, index) => (
-                <button
-                    key={index}
-                    className="block w-full p-3 my-2 bg-blue-500 text-white rounded"
-                    onClick={() => handleChoice(choice)}
-                >
-                    {choice.name}
-                </button>
-            ))}
+            <title>Welcome to Your LAIfe</title>
+            <h1 className="text-2xl mb-4 color-changing-title">Welcome to Your LAIfe</h1>
+            <h2 className="text-2xl mb-4 color-changing-title">Please select your role</h2>
+            <div className="button-container">
+                {choices.map((choice, index) => (
+                    <button
+                        key={index}
+                        className="p-3 bg-blue-500 text-white rounded"
+                        onClick={() => handleChoice(choice)}
+                    >
+                        {choice.name}
+                    </button>
+                ))}
+            </div>
         </div>
     );
 }

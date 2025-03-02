@@ -5,7 +5,7 @@ export default function Gamepage() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [step, setStep] = useState(0); 
+    const [step, setStep] = useState(0);
     let sys_pmt = location.state.description;
     const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
     const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
@@ -25,7 +25,7 @@ export default function Gamepage() {
                     const questionResponse = await fetch("http://127.0.0.1:5000/generate_question", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ sys_pmt: sys_pmt+"\n"+base_sys_pmt, context }),
+                        body: JSON.stringify({ sys_pmt: sys_pmt + "\n" + base_sys_pmt, context }),
                     });
                     if (!questionResponse.ok) throw new Error("Failed to load question.");
                     const questionData = await questionResponse.json();
@@ -34,7 +34,7 @@ export default function Gamepage() {
                     const choicesResponse = await fetch("http://127.0.0.1:5000/generate_choices", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ question: questionData.question, context, sys_pmt: sys_pmt+"\n"+base_sys_pmt, }),
+                        body: JSON.stringify({ question: questionData.question, context, sys_pmt: sys_pmt + "\n" + base_sys_pmt, }),
                     });
                     if (!choicesResponse.ok) throw new Error("Failed to load choices.");
                     const choicesData = await choicesResponse.json();
@@ -84,13 +84,14 @@ export default function Gamepage() {
 
     return (
         <div className="p-6 flex flex-col justify-center items-center h-screen">
+            <title>LAIfe Story in Progress</title>
             {loading ? (
                 <p className="text-xl font-semibold">Loading...</p>
             ) : error ? (
                 <p className="text-xl text-red-500">{error}</p>
             ) : (
                 <>
-                    <h1 className="text-2xl font-semibold mb-6">{question}</h1>
+                    <p className="text-2xl font-semibold mb-6">{question}</p>
                     {choices.map((choice, index) => (
                         <button
                             key={index}

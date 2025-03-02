@@ -17,7 +17,7 @@ function App() {
           <Route path="/game" element={<Gamepage />} />
         </Routes>
 
-      </div>updated
+      </div>
 
     </HashRouter>
   )
