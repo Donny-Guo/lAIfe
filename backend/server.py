@@ -286,7 +286,6 @@ def init_status_helper():
     except Exception as e:
         print(f"Error in /init: {str(e)}")
         traceback.print_exc()
-        return {"error": str(e)}  # Return a dictionary instead of `jsonify`
 
 
 def delete_folder(folder_path):
