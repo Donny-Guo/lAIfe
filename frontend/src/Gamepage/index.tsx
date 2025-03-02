@@ -82,9 +82,14 @@ export default function Gamepage() {
         }
     }, [step]);
 
+    // useEffect(() => {
+    //     if (error) navigate("/end", { state: { history } });
+    // }, [error, navigate, history]);
     useEffect(() => {
-        if (error) navigate("/end", { state: { history } });
-    }, [error, navigate, history]);
+        if (step > lifeStages.length) {  
+            navigate("/end", { state: { history, health, wealth, intelligence } });
+        }
+    }, [step, navigate, history, health, wealth, intelligence]);
 
     const handleChoice = async (choice: string, index: number) => {
 
@@ -93,7 +98,7 @@ export default function Gamepage() {
         } else {
             const choiceData = {
                 question: question,
-                selection: index, // Store selected choice index (1-based)
+                selection: index, // Store selected choice index 0-based
                 // option_choice: choice,  // Store selected choice text
                 choices: choices // Store all choices
             };

@@ -151,7 +151,7 @@ def generate_choices():
         response_text = chat_completion.choices[0].message.content.strip()
         print(f"Generated choices raw response:\n{response_text}")  # Debug output
 
-        # **Extracting choices and effects**
+        # Extracting choices and effects
         choices = []
         effects = []
 
@@ -169,7 +169,7 @@ def generate_choices():
                 except Exception as e:
                     print(f"Error parsing line: {line}, Error: {e}")
 
-        # **Ensure we have exactly 4 valid choices**
+        # Ensure having exactly 4 valid choices
         if len(choices) < 4:
             return jsonify({"error": "Not enough valid choices generated", "raw_output": response_text}), 500
 
@@ -178,6 +178,24 @@ def generate_choices():
     except Exception as e:
         print(f"Error generating choices: {str(e)}")
         return jsonify({"error": "Failed to generate choices"}), 500
+    
+@app.route("/generate_summary", methods=["POST"])
+def generate_summary():
+    data = request.get_json()
+    history = data.get("history", [])
+    wealth = data.get("wealth", 0)
+    health = data.get("health", 0)
+    intelligence = data.get("intelligence", 0)
+    lifeStory = ', '.join(history)
+    prompt = (
+        f"Current Life Stage: {curStage}\n"
+        f"Context: {context}\n"
+        f"Question: \"{question}\"\n"
+        f"Parameters (Health, Wealth, Intelligence): {curParameters}\n"
+        "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
+        "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
+        "Effect values should be integers between -2 and 2."
+    )
 
 # initialize three parameters of the character and family background
 @app.route("/init", methods=["GET"])
@@ -230,7 +248,12 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_name TEXT NOT NULL,
             user_id TEXT NOT NULL,  -- Can be a UUID if needed
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            background TEXT,
+            health INTEGER,
+            wealth INTEGER,
+            intelligence INTEGER,
+            image_path TEXT
         )
     """)
     # choices are array in json
@@ -273,7 +296,7 @@ def create_session():
     os.makedirs(folder_path, exist_ok=True)
     return jsonify({"session_id": session_id, "user_id": user_id})
 
-@app.route("/get_session", methods=["GET"])
+@app.route("/get_sessions", methods=["GET"])
 def get_sessions():
     conn = sqlite3.connect("chat.db")
     cursor = conn.cursor()
@@ -283,7 +306,7 @@ def get_sessions():
     return jsonify(sessions)
 
 @app.route("/delete_session", methods=["POST"])
-def delete_sessions():
+def delete_session():
     conn = sqlite3.connect("chat.db")
     data = request.json
     session_id = data.get("session_id")
