@@ -36,9 +36,11 @@ client = Groq(
 
 
 app = Flask(__name__)
-media_path = "./deepseek_media"
+
 from flask_cors import CORS
 CORS(app)
+
+media_path = "./deepseek_media"
 
 # @app.route("/chat", methods=["POST"])
 # def chat():
@@ -95,7 +97,7 @@ def generate_question():
                                 A reference to at least one significant past experience or relationship from the user’s context (e.g., a childhood friend).
                                 A large-scale, externally driven event that significantly affects the user’s life but isn’t directly caused by them (e.g., war).
                                 For instance: ‘Your childhood best friend proposes marriage, but a war breaks out and threatens your community.’
-                                Ensure the question encourages thoughtful consideration of how personal choices intersect with broader circumstances outside the user’s control.\n""",
+                                Ensure the question encourages thoughtful consideration of how personal choices intersect with broader circumstances outside the user’s control. Within 40 words\n""",
                 },
                 {
                     "role": "user", 
@@ -139,7 +141,7 @@ def generate_choices():
             messages=[
                 {
                     "role": "system",
-                    "content":f"You are a playful life-simulator guide. Based on the user’s life context and question, generate exactly four life-changing choices for their current life stage. For each choice, include a potential effect value (ranging from -2 to 2) on the relevant parameters. Keep the tone imaginative and fun, but ensure the choices align with the context and parameters provided.:\n",
+                    "content":f"You are a playful life-simulator guide. Based on the user’s life context and question, generate exactly four life-changing choices for their current life stage. For each choice, include a potential effect value (ranging from -2 to 2) on the relevant parameters. Keep the tone imaginative and fun, but ensure the choices align with the context and parameters provided. Each choices no longer then 20 words:\n",
                 },
                 {
                     "role": "user", 
@@ -188,52 +190,104 @@ def generate_summary():
     intelligence = data.get("intelligence", 0)
     lifeStory = ', '.join(history)
     prompt = (
-        f"Current Life Stage: {curStage}\n"
-        f"Context: {context}\n"
-        f"Question: \"{question}\"\n"
-        f"Parameters (Health, Wealth, Intelligence): {curParameters}\n"
-        "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
-        "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
-        "Effect values should be integers between -2 and 2."
+        f"life story: {lifeStory}\n"
+        f"wealth: {wealth}\n"
+        f"health: {health}\n"
+        f"intelligence: {intelligence}\n"
+        "Below is a player's life story along with their final scores in key attributes. Please generate a compelling and insightful summary of their life journey, highlighting significant themes, achievements, and challenges."
     )
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
+            model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
+        )
+        question = chat_completion.choices[0].message.content.strip()
+        # print(f"Generated question: {question}")  # For debugging/logging
+        return jsonify({"summary": question})
+    except Exception as e:
+        print(f"Error generating question: {str(e)}")
+        return jsonify({"error": "Failed to generate question"}), 500
 
 # initialize three parameters of the character and family background
+from flask import Flask, request, jsonify
+import numpy as np
+import traceback
+
+app = Flask(__name__)
+
 @app.route("/init", methods=["GET"])
 def init_status():
+    lim = 1
+    choices = []
+    
+    for i in range(lim):
+        result = init_status_helper()  # Get the dictionary response
+        if isinstance(result, dict):  # Ensure it's not a Flask Response
+            choices.append(result)
+            print(choices[-1]["description"])
+        else:
+            print("init_status_helper() returned an invalid response:", result)
+
+    return jsonify(choices), 200, {'Content-Type': 'application/json'}
+
+
+def init_status_helper():
     try:
-        health, money, wisdom = np.random.randint(low=1, high=21, size=3, dtype=int)
-        bg_prompt = ("Generate 5 different family background (what is the family look like) for me"
-                    "when a child is born in America. You need to include the following aspects: "
-                    "Parental Resources and Wellbeing, Parental Health, Family Structure, Parental Education,"
-                    "Parental Age, Socioeconomic Status, Cultural and Ethnic Background, Religious Background,"
-                    "Extended Family, Home Environment, Parental Relationships. Describe each background in"
-                    "an autobiographical manner in a few sentences and separated by a new line. No extra words needed.")
+        bg_prompt = (
+            "Generate 5 different family backgrounds for a child born in America. "
+            "Include the following aspects: Parental Resources, Wellbeing, Health, "
+            "Family Structure, Parental Education, Age, Socioeconomic Status, Cultural Background, "
+            "Religious Background, Extended Family, Home Environment, Parental Relationships. "
+            "Describe each background in an autobiographical manner in a few sentences, "
+            "separated by a new line. No extra words needed.\n"
+            "Based on your generation, provide a one-word name and three integers (1-20) "
+            "for the baby's Wealth, Health, and Intelligence, formatted as:"
+            "[name] | [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
+        )
+
+        # Request LLM for generation
         while True:
-            # ask llm to generate 5 distinct family background
             chat_completion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": bg_prompt}],
-                    model="llama-3.3-70b-versatile",
-                    timeout=20
-                )
+                messages=[{"role": "user", "content": bg_prompt}],
+                model="llama-3.3-70b-versatile",
+                timeout=20
+            )
             response_text = chat_completion.choices[0].message.content.strip()
             if len(response_text) > 10:
-                # print(f"response_text: {response_text}")
-                break
+                break  # Ensure response is not empty
 
         backgrounds = response_text.split("\n")
-        while True:
-            selected_background = backgrounds[np.random.randint(low=0, high=len(backgrounds), dtype=int)]
-            if selected_background: break
-        print(f"selected_background: {selected_background}")
-        return jsonify({"selected_background": selected_background,
-                        "health": int(health),
-                        "money": int(money),
-                        "wisdom": int(wisdom)})
+        print("Backgrounds:", backgrounds)
+
+        # Select a random background
+        selected_background = np.random.choice(backgrounds)
+        nickname, health, wealth, intelligence = "", 0, 0, 0
+
+        for line in backgrounds:
+            line = line.strip()
+            if "|" in line:
+                nickname, params = line.split("|")
+                values = [int(x) for x in params.replace("|", "").strip().split(",")]
+                health, wealth, intelligence = values
+
+        return {
+            "description": f"You are born in: {selected_background}, these are your attributes.",
+            "name": nickname.strip(),
+            "health": int(health),
+            "wealth": int(wealth),
+            "intelligence": int(intelligence)
+        }
+
     except Exception as e:
-        # Log the error
         print(f"Error in /init: {str(e)}")
-        # Return a proper error response
-        return jsonify({"error": "Failed to generate data"}), 500
+        traceback.print_exc()
+        return {"error": str(e)}  # Return a dictionary instead of `jsonify`
+
 
 def delete_folder(folder_path):
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
