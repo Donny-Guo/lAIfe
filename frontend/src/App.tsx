@@ -2,6 +2,7 @@
 import { HashRouter, Route, Routes } from "react-router-dom";
 import './App.css'
 import Startpage from './Startpage';
+import Gamepage from './Gamepage'
 
 function App() {
 
@@ -12,8 +13,11 @@ function App() {
         <Routes>
           <Route path="/" element={<Startpage />} />
         </Routes>
+        <Routes>
+          <Route path="/game" element={<Gamepage />} />
+        </Routes>
 
-      </div>
+      </div>updated
 
     </HashRouter>
   )

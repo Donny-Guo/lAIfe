@@ -4,17 +4,41 @@ import base64
 import os
 import shutil
 from groq import Groq
-from flask_cors import CORS
+from crewai import Agent, Task, Crew
 
-with open('groq_api', 'r') as f:
-    _api_key_ = f.read().strip()
+# with open('groq_api', 'r') as f:
+#     _api_key_ = f.read().strip()
+
+# client = Groq(
+#     api_key = _api_key_
+# )
 
 client = Groq(
-    api_key = _api_key_
+    api_key = os.environ.get("GROQ_API_KEY")
 )
+
+
+agent1 = Agent(
+    role="Narrator",
+    goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
+    memory=True,
+    backstory="An expert AI researcher specializing in structured data analysis.",
+    llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
+)
+
+agent2 = Agent(
+    role="Predictor",
+    goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
+    memory=True,
+    backstory="A professional AI writer skilled in summarizing complex content.",
+    llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
+)
+
 
 app = Flask(__name__)
 media_path = "./deepseek_media"
+from flask_cors import CORS
+CORS(app)
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -30,6 +54,10 @@ def chat():
     chat_completion = client.chat.completions.create(
         messages=[
             {
+                "role": "system",
+                "content":"",
+            },
+            {
                 "role": "user",
                 "content": user_input,
             }
@@ -40,6 +68,90 @@ def chat():
     # Return the response from the model as JSON
     assistant_response = chat_completion.choices[0].message.content
     return jsonify({"response": assistant_response})
+
+@app.route("/generate_question", methods=["POST"])
+def generate_question():
+    data = request.get_json()
+    context = data.get("context", "")
+    system_prompt = data.get("sys_pmt", "")
+    # Construct a prompt for the question-generating robot
+    prompt = f"Based on the following context, generate an engaging and clear question:\nContext: {context}"
+    
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                "role": "system",
+                "content":"",
+                },
+                {"role": "user", "content": prompt}
+                ],
+            model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
+        )
+        question = chat_completion.choices[0].message.content.strip()
+        print(f"Generated question: {question}")  # For debugging/logging
+        return jsonify({"question": question})
+    except Exception as e:
+        print(f"Error generating question: {str(e)}")
+        return jsonify({"error": "Failed to generate question"}), 500
+    
+
+    
+
+@app.route("/generate_choices", methods=["POST"])
+def generate_choices():
+    data = request.get_json()
+    question = data.get("question")
+    context = data.get("context", "")
+    system_prompt = data.get("sys_pmt", "")
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
+
+    # Construct a prompt for the choices-generating robot.
+    # The prompt asks for 4 distinct answer choices.
+    prompt = (
+        f"Generate 4 distinct answer choices for the following question:\n"
+        f"Question: '{question}'\n"
+        f"Context: {context}\n"
+        "Please list each answer on a new line."
+    )
+    
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                "role": "system",
+                "content":"",
+                },
+                {"role": "user", "content": prompt}
+                ],
+            model="llama-3.3-70b-versatile",
+        )
+        response_text = chat_completion.choices[0].message.content.strip()
+        print(f"Generated choices raw response: {response_text}")  # Debug output
+
+        # Process the returned text to extract individual choices.
+        lines = response_text.split("\n")
+        choices = []
+        for line in lines:
+            line = line.strip()
+            # Remove any numbering or bullet formatting if present
+            if line and (line[0].isdigit() or line.startswith("-")):
+                if "." in line:
+                    line = line.split(".", 1)[-1].strip()
+                elif "-" in line:
+                    line = line.split("-", 1)[-1].strip()
+            if line:
+                choices.append(line)
+        # Fallback: if not enough choices, try splitting by comma.
+        if len(choices) < 4:
+            choices = [choice.strip() for choice in response_text.split(",") if choice.strip()]
+        return jsonify({"choices": choices[:4]})
+    except Exception as e:
+        print(f"Error generating choices: {str(e)}")
+        return jsonify({"error": "Failed to generate choices"}), 500
+
+
 
 
 def delete_folder(folder_path):
@@ -58,12 +170,14 @@ def init_db():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # choices are array in json
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INTEGER NOT NULL,
-            user TEXT NOT NULL,
-            assistant TEXT NOT NULL,
+            question TEXT NOT NULL,
+            choices TEXT NOT NULL,  
+            selection INTEGER,
             image_base64 TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
@@ -126,20 +240,23 @@ def delete_sessions():
     finally:
         conn.close()
 
+
+import json
 # Save chat message
 @app.route("/save_chat", methods=["POST"])
 def save_chat():
     data = request.json
     session_id = data.get("session_id")
-    user_message = data.get("user")
-    assistant_message = data.get("assistant")
+    question = data.get("question")
+    choices = json.dumps(data.get("choices"))
+    selection = data.get("selection")
     images = data.get("images", "")
     print(images)
 
     conn = sqlite3.connect("chat.db")
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO chat_history (session_id, user, assistant, image_base64) VALUES (?, ?, ?, ?)",
-                   (session_id, user_message, assistant_message, images))
+    cursor.execute("INSERT INTO chat_history (session_id, question, choices, selection, image_base64) VALUES (?, ?, ?, ?, ?)",
+                   (session_id, question, choices, selection, images))
     conn.commit()
     conn.close()
     print(images)
@@ -150,13 +267,12 @@ def save_chat():
 def load_chat(session_id):
     conn = sqlite3.connect("chat.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT user, assistant, image_base64 FROM chat_history WHERE session_id = ? ORDER BY id ASC LIMIT 10", (session_id,))
+    cursor.execute("SELECT question, choices, selection, image_base64 FROM chat_history WHERE session_id = ? ORDER BY id ASC LIMIT 10", (session_id,))
     chat_data = cursor.fetchall()
     
     history = []
     for row in chat_data:
-        history.append({"role": "user", "content": row[0], "images": row[2]})       # User message
-        history.append({"role": "assistant", "content": row[1], "images": None})  # Assistant response
+        history.append({"question": row[0], "choices": row[1], "selection": row[2]})       # User message
     # if history:
     #     session_name = history[0]["content"][:20]  # Trim to 20 characters
     #     cursor.execute("UPDATE chat_sessions SET session_name = ? WHERE session_id = ?", (session_name, session_id))
