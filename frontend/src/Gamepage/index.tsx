@@ -88,8 +88,10 @@ export default function Gamepage() {
     useEffect(() => {
         if (step > lifeStages.length) {  
             navigate("/end", { state: { history, health, wealth, intelligence } });
+            return;
         }
     }, [step, navigate, history, health, wealth, intelligence]);
+
 
     const handleChoice = async (choice: string, index: number) => {
 
@@ -119,27 +121,47 @@ export default function Gamepage() {
 
     return (
         <div className="p-6 flex flex-col justify-center items-center h-screen">
+            <title>LAIfe in Progress</title>
             {loading ? (
                 <p className="text-xl font-semibold">Loading...</p>
             ) : error ? (
                 <p className="text-xl text-red-500">{error}</p>
             ) : (
                 <>
+                    <tbody className="text-red-500">
+                        <tr>
+                            <td>
+                                ❤️ Health: {health}
+                            </td>
+
+                            <td>
+                                💰 Wealth: {wealth}
+                            </td>
+
+                            <td>
+                                🧠 Intelligence: {intelligence}
+                            </td>
+                        </tr>
+                    </tbody>
+                    {/* <p className="text-yellow-500">💰 Wealth: {wealth}</p>
+                        <p className="text-blue-500">🧠 Intelligence: {intelligence}</p> */}
+
+                    <p className="text-2xl font-semibold mb-6">{question}</p>
+
                     <div className="mb-6 flex gap-4 text-lg font-semibold">
-                        <p className="text-red-500">❤️ Health: {health}</p>
-                        <p className="text-yellow-500">💰 Wealth: {wealth}</p>
-                        <p className="text-blue-500">🧠 Intelligence: {intelligence}</p>
+
                     </div>
-                    <h1 className="text-2xl font-semibold mb-6">{question}</h1>
-                    {choices.map((choice, index) => (
-                        <button
-                            key={index}
-                            className="w-64 p-3 my-2 bg-green-500 text-white rounded text-lg"
-                            onClick={() => handleChoice(choice, index)}
-                        >
-                            {index}. {choice}
-                        </button>
-                    ))}
+                    <div className="button-container">
+                        {choices.map((choice, index) => (
+                            <button
+                                key={index}
+                                className="w-64 p-3 my-2 bg-green-500 text-white rounded text-lg"
+                                onClick={() => handleChoice(choice, index)}
+                            >
+                                {index}. {choice}
+                            </button>
+                        ))}
+                    </div>
                 </>
             )}
         </div>
