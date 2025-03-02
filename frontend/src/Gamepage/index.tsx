@@ -5,16 +5,16 @@ export default function Gamepage() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [step, setStep] = useState(0); 
+    const [step, setStep] = useState(0);
     // let sys_pmt = location.state.description;
     // const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
     const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
     const [choices, setChoices] = useState<string[]>(["Start"]);
     const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state.description] : []);
-// <!--     const [question, setQuestion] = useState<string | null>("I am at the age of 0-3yrs old.");
-//     // const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
-//     const [choices, setChoices] = useState<string[]>(["Start"]);
-//     const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state?.description] : []);
+    // <!--     const [question, setQuestion] = useState<string | null>("I am at the age of 0-3yrs old.");
+    //     // const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
+    //     const [choices, setChoices] = useState<string[]>(["Start"]);
+    //     const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state?.description] : []);
     // const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []); -->
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -26,17 +26,17 @@ export default function Gamepage() {
         "0 month - 3 yr",
         "3yr - 6yr",
         "6yr - 12yr: primary schooler",
-        "12yr - 18yr: high schooler",
-        "18yr - 22yr: College student",
-        "22yr - 25 yr: Master/Doctoral student",
-        "25yr - 35yr: child or not",
-        "35yr - 50yr: parenthood",
-        "50yr - 65yr: grandchild or not",
-        "Young-old (65–74 years): Retirement",
-        "Middle-old (75–84 years)",
-        "Old-old (85+ years): death"
+        // "12yr - 18yr: high schooler",
+        // "18yr - 22yr: College student",
+        // "22yr - 25 yr: Master/Doctoral student",
+        // "25yr - 35yr: child or not",
+        // "35yr - 50yr: parenthood",
+        // "50yr - 65yr: grandchild or not",
+        // "Young-old (65–74 years): Retirement",
+        // "Middle-old (75–84 years)",
+        // "Old-old (85+ years): death"
     ];
-    
+
 
     useEffect(() => {
         if (step > 0) {
@@ -47,16 +47,16 @@ export default function Gamepage() {
                 try {
                     const context = history.join(" ") || "";
                     console.log(context)
-                    const questionResponse = await fetch("http://127.0.0.1:5000/generate_question", {
+                    const questionResponse = await fetch("http://10.0.0.182:5000/generate_question", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({  context, curStage, health, wealth, intelligence  }),
+                        body: JSON.stringify({ context, curStage, health, wealth, intelligence }),
                     });
                     if (!questionResponse.ok) throw new Error("Failed to load question.");
                     const questionData = await questionResponse.json();
                     setQuestion(questionData.question);
 
-                    const choicesResponse = await fetch("http://127.0.0.1:5000/generate_choices", {
+                    const choicesResponse = await fetch("http://10.0.0.182:5000/generate_choices", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ question: questionData.question, context, curStage, health, wealth, intelligence }),
@@ -70,7 +70,7 @@ export default function Gamepage() {
                     // })
                     setChoices(choicesData.choices);
                     setParamsDiff(choicesData.effects);
-                    
+
                 } catch (err) {
                     setError("Could not load question. Please try again.");
                 } finally {
@@ -86,7 +86,7 @@ export default function Gamepage() {
     //     if (error) navigate("/end", { state: { history } });
     // }, [error, navigate, history]);
     useEffect(() => {
-        if (step > lifeStages.length) {  
+        if (step > lifeStages.length) {
             navigate("/end", { state: { history, health, wealth, intelligence } });
         }
     }, [step, navigate, history, health, wealth, intelligence]);

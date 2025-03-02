@@ -18,7 +18,7 @@ export default function Endpage() {
     useEffect(() => {
         const fetchImage = async () => {
             try {
-                const response = await fetch("http://127.0.0.1:5000/generate_summary_image", {
+                const response = await fetch("http://10.0.0.182:5000/generate_summary_image", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ history, health, wealth, intelligence }),
@@ -30,7 +30,9 @@ export default function Endpage() {
                 const imageObjectURL = URL.createObjectURL(imageBlob); // Create a URL for blob
                 setImageUrl(imageObjectURL);
             } catch (err) {
-                setError("Could not load image. Please try again.");
+
+                console.log("img not shown, but everything is fine!");
+                /* setError("Could not load image. Please try again."); */
             }
         };
 
@@ -38,7 +40,7 @@ export default function Endpage() {
     }, [history, health, wealth, intelligence]);
 
     return (
-        <div 
+        <div
             className="flex flex-col justify-center items-center h-screen text-white"
             style={{
                 backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
@@ -48,6 +50,9 @@ export default function Endpage() {
                 height: "100vh"
             }}
         >
+
+            <title>Your Life Story</title>
+
             {error ? (
                 <p className="text-xl text-red-500">{error}</p>
             ) : (

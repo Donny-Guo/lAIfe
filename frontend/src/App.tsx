@@ -25,7 +25,7 @@ function App() {
           <Route path="/init" element={<Initpage />} />
         </Routes>
 
-      </div>updated
+      </div>
 
     </HashRouter>
   )

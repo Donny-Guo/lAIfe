@@ -1,0 +1,27 @@
+{
+  "name": "laife",
+  "version": "1.0.0",
+  "description": "Setup:",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest",
+    "dev": "vite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Donny-Guo/lAIfe.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Donny-Guo/lAIfe/issues"
+  },
+  "homepage": "https://github.com/Donny-Guo/lAIfe#readme",
+  "dependencies": {
+    "@types/react-router-dom": "^5.3.3",
+    "react-router-dom": "^7.2.0",
+    "vite": "^6.2.0"
+  }
+}
