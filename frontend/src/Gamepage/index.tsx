@@ -24,17 +24,17 @@ export default function Gamepage() {
     const [intelligence, setIntelligence] = useState<number>(location.state?.intelligence || "33");
     const lifeStages = [
         "0 month - 3 yr",
-        // "3yr - 6yr",
-        // "6yr - 12yr: primary schooler",
-        // "12yr - 18yr: high schooler",
-        // "18yr - 22yr: College student",
-        // "22yr - 25 yr: Master/Doctoral student",
-        // "25yr - 35yr: child or not",
-        // "35yr - 50yr: parenthood",
-        // "50yr - 65yr: grandchild or not",
-        // "Young-old (65–74 years): Retirement",
-        // "Middle-old (75–84 years)",
-        // "Old-old (85+ years): death"
+        "3yr - 6yr",
+        "6yr - 12yr: primary schooler",
+        "12yr - 18yr: high schooler",
+        "18yr - 22yr: College student",
+        "22yr - 25 yr: Master/Doctoral student",
+        "25yr - 35yr: child or not",
+        "35yr - 50yr: parenthood",
+        "50yr - 65yr: grandchild or not",
+        "Young-old (65–74 years): Retirement",
+        "Middle-old (75–84 years)",
+        "Old-old (85+ years): death"
     ];
 
 
