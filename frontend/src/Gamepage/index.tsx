@@ -88,8 +88,10 @@ export default function Gamepage() {
     useEffect(() => {
         if (step > lifeStages.length) {
             navigate("/end", { state: { history, health, wealth, intelligence } });
+            return;
         }
     }, [step, navigate, history, health, wealth, intelligence]);
+
 
     const handleChoice = async (choice: string, index: number) => {
 

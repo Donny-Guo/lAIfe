@@ -13,7 +13,7 @@ export default function Endpage() {
 
     // State to store the image URL from the backend
     const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const [summary, setSummary] = useState<string | null>(null);
+    const [summary, setSummary] = useState("");
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -39,33 +39,37 @@ export default function Endpage() {
 
         fetchImage();
 
-        const fetchSummary = async () => {
-            try {
-                const response = await fetch("http://10.0.0.182:5000/generate_summary", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ history, health, wealth, intelligence }),
-                });
-
-                if (!response.ok) throw new Error("Failed to summary.");
-
-                const summaryData = await response.json();
-
-                setSummary(summaryData.summary);
-
-            } catch (err) {
-
-                console.log("summary not shown, but everything is fine!");
-                /* setError("Could not load image. Please try again."); */
-            }
-        };
-
-        fetchSummary();
-
 
     }, [history, health, wealth, intelligence]);
 
+    const fetchSummary = async () => {
+        try {
+            const response = await fetch("http://10.0.0.182:5000/generate_summary", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ history, health, wealth, intelligence }),
+            });
+
+            if (!response.ok) throw new Error("Failed to summary.");
+
+            const summaryData = await response.json();
+
+            setSummary(summaryData.summary);
+
+        } catch (err) {
+
+            console.log("summary not shown, but everything is fine!");
+            /* setError("Could not load image. Please try again."); */
+        }
+    };
+
+    fetchSummary();
+
+
+
     return (
+
+
         <div
             className="flex flex-col justify-center items-center h-screen text-white"
             style={{
@@ -78,6 +82,8 @@ export default function Endpage() {
         >
 
             <title>Your Life Story</title>
+
+
 
             {error ? (
                 <p className="text-xl text-red-500">{error}</p>
