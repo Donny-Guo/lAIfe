@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify, send_file
 import sqlite3
-import base64
 import os
 import shutil
+import numpy as np
 from groq import Groq
-from crewai import Agent, Task, Crew
+# from crewai import Agent, Task, Crew
 
 # with open('groq_api', 'r') as f:
 #     _api_key_ = f.read().strip()
@@ -18,21 +18,21 @@ client = Groq(
 )
 
 
-agent1 = Agent(
-    role="Narrator",
-    goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
-    memory=True,
-    backstory="An expert AI researcher specializing in structured data analysis.",
-    llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
-)
+# agent1 = Agent(
+#     role="Narrator",
+#     goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
+#     memory=True,
+#     backstory="An expert AI researcher specializing in structured data analysis.",
+#     llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
+# )
 
-agent2 = Agent(
-    role="Predictor",
-    goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
-    memory=True,
-    backstory="A professional AI writer skilled in summarizing complex content.",
-    llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
-)
+# agent2 = Agent(
+#     role="Predictor",
+#     goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
+#     memory=True,
+#     backstory="A professional AI writer skilled in summarizing complex content.",
+#     llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
+# )
 
 
 app = Flask(__name__)
@@ -75,7 +75,8 @@ def generate_question():
     context = data.get("context", "")
     system_prompt = data.get("sys_pmt", "")
     # Construct a prompt for the question-generating robot
-    prompt = f"Based on the following context, generate an engaging and clear question:\nContext: {context}"
+    prompt = (f"Based on the following context, generate an engaging and clear question within 25 words:\n"
+              f"Context: {context}")
     
     try:
         chat_completion = client.chat.completions.create(
@@ -94,9 +95,6 @@ def generate_question():
     except Exception as e:
         print(f"Error generating question: {str(e)}")
         return jsonify({"error": "Failed to generate question"}), 500
-    
-
-    
 
 @app.route("/generate_choices", methods=["POST"])
 def generate_choices():
@@ -110,7 +108,8 @@ def generate_choices():
     # Construct a prompt for the choices-generating robot.
     # The prompt asks for 4 distinct answer choices.
     prompt = (
-        f"Generate 4 distinct answer choices for the following question:\n"
+        f"Generate 4 distinct answer choices for the following question." 
+        "Each choice should be succinct and no more than 20 words:\n"
         f"Question: '{question}'\n"
         f"Context: {context}\n"
         "Please list each answer on a new line."
@@ -151,8 +150,74 @@ def generate_choices():
         print(f"Error generating choices: {str(e)}")
         return jsonify({"error": "Failed to generate choices"}), 500
 
+# initialize three parameters of the character and family background
+@app.route("/init", methods=["GET"])
+def init_status():
+    try:
+        health, money, wisdom = np.random.randint(low=1, high=21, size=3, dtype=int)
+        bg_prompt = ("Generate 5 different family background (what is the family look like) for me"
+                    "when a child is born in America. You need to include the following aspects: "
+                    "Parental Resources and Wellbeing, Parental Health, Family Structure, Parental Education,"
+                    "Parental Age, Socioeconomic Status, Cultural and Ethnic Background, Religious Background,"
+                    "Extended Family, Home Environment, Parental Relationships. Describe each background in"
+                    "an autobiographical manner in a few sentences and separated by a new line. No extra words needed.")
+        while True:
+            # ask llm to generate 5 distinct family background
+            chat_completion = client.chat.completions.create(
+                    messages=[{"role": "user", "content": bg_prompt}],
+                    model="llama-3.3-70b-versatile",
+                    timeout=20
+                )
+            response_text = chat_completion.choices[0].message.content.strip()
+            if len(response_text) > 10:
+                # print(f"response_text: {response_text}")
+                break
 
+        backgrounds = response_text.split("\n")
+        while True:
+            selected_background = backgrounds[np.random.randint(low=0, high=len(backgrounds), dtype=int)]
+            if selected_background: break
+        print(f"selected_background: {selected_background}")
+        return jsonify({"selected_background": selected_background,
+                        "health": int(health),
+                        "money": int(money),
+                        "wisdom": int(wisdom)})
+    except Exception as e:
+        # Log the error
+        print(f"Error in /init: {str(e)}")
+        # Return a proper error response
+        return jsonify({"error": "Failed to generate data"}), 500
 
+# data = request.get_json()
+# health = data.get("health")
+# money = data.get("money")
+# wisdom = data.get("wisdom")
+
+#----------------------------------------------------------------------------------------
+@app.route("/chat", methods=["POST"])
+def chat():
+    # Get JSON data from the request
+    data = request.get_json()
+    user_input = data.get("user_input")
+    
+    # Return an error if no input is provided
+    if not user_input:
+        return jsonify({"error": "No user input provided"}), 400
+
+    # Send the user input to the llama model
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": user_input,
+            }
+        ],
+        model="llama-3.3-70b-versatile",
+    )
+    
+    # Return the response from the model as JSON
+    assistant_response = chat_completion.choices[0].message.content
+    return jsonify({"response": assistant_response})
 
 def delete_folder(folder_path):
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
