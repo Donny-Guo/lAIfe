@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+// import { useState } from "react";
 
 interface Choice {
   name: string;
@@ -185,6 +185,7 @@ export default function Startpage(): JSX.Element {
               Close
             </button>
           </div>
+
         </div>
       )}
     </div>

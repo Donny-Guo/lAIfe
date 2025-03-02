@@ -4,6 +4,7 @@ import './App.css'
 import Startpage from './Startpage';
 import Gamepage from './Gamepage';
 import Endpage from './Endpage';
+import Initpage from './Initpage'
 
 function App() {
 
@@ -19,6 +20,9 @@ function App() {
         </Routes>
         <Routes>
           <Route path="/end" element={<Endpage />} />
+        </Routes>
+        <Routes>
+          <Route path="/init" element={<Initpage />} />
         </Routes>
 
       </div>updated
