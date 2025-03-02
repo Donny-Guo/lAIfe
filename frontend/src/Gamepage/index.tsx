@@ -6,16 +6,35 @@ export default function Gamepage() {
     const location = useLocation();
 
     const [step, setStep] = useState(0); 
-    let sys_pmt = location.state.description;
-    const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
+    // let sys_pmt = location.state.description;
+    // const base_sys_pmt = "there should be 3 stages in my life, finish story within these stages";
     const [question, setQuestion] = useState<string | null>(location.state?.description || "Welcome to your journey!");
     const [choices, setChoices] = useState<string[]>(["Start"]);
-    const [history, setHistory] = useState<string[]>(location.state?.choice ? [location.state.choice] : []);
+    const [history, setHistory] = useState<string[]>(location.state?.description ? [location.state.description] : []);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [health, setHealth] = useState<number>(location.state?.health || "33");
+    const [wealth, setWealth] = useState<number>(location.state?.wealth || "33");
+    const [intelligence, setIntelligence] = useState<number>(location.state?.intelligence || "33");
+    const lifeStages = [
+        "0 month - 3 yr",
+        "3yr - 6yr",
+        "6yr - 12yr: primary schooler",
+        "12yr - 18yr: high schooler",
+        "18yr - 22yr: College student",
+        "22yr - 25 yr: Master/Doctoral student",
+        "25yr - 35yr: child or not",
+        "35yr - 50yr: parenthood",
+        "50yr - 65yr: grandchild or not",
+        "Young-old (65–74 years): Retirement",
+        "Middle-old (75–84 years)",
+        "Old-old (85+ years): death"
+    ];
+    
 
     useEffect(() => {
         if (step > 0) {
+            let curStage = lifeStages[step - 1];
             const fetchQuestionAndChoices = async () => {
                 setLoading(true);
                 setError(null);
@@ -25,7 +44,7 @@ export default function Gamepage() {
                     const questionResponse = await fetch("http://127.0.0.1:5000/generate_question", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ sys_pmt: sys_pmt+"\n"+base_sys_pmt, context }),
+                        body: JSON.stringify({  context, curStage, health, wealth, intelligence  }),
                     });
                     if (!questionResponse.ok) throw new Error("Failed to load question.");
                     const questionData = await questionResponse.json();
@@ -34,7 +53,7 @@ export default function Gamepage() {
                     const choicesResponse = await fetch("http://127.0.0.1:5000/generate_choices", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ question: questionData.question, context, sys_pmt: sys_pmt+"\n"+base_sys_pmt, }),
+                        body: JSON.stringify({ question: questionData.question, context, curStage, health, wealth, intelligence }),
                     });
                     if (!choicesResponse.ok) throw new Error("Failed to load choices.");
                     const choicesData = await choicesResponse.json();

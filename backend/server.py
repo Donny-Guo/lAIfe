@@ -18,21 +18,21 @@ client = Groq(
 )
 
 
-agent1 = Agent(
-    role="Narrator",
-    goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
-    memory=True,
-    backstory="An expert AI researcher specializing in structured data analysis.",
-    llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
-)
+# agent1 = Agent(
+#     role="Narrator",
+#     goal="You are a life game simulator, you will give me different choices in different status of my life, and will generate me new status and new choice. Initial status will be given at the beginning.",
+#     memory=True,
+#     backstory="An expert AI researcher specializing in structured data analysis.",
+#     llm=lambda prompt: query_groq("llama3-8b", prompt)  # Using Groq's LLaMA-3 8B model
+# )
 
-agent2 = Agent(
-    role="Predictor",
-    goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
-    memory=True,
-    backstory="A professional AI writer skilled in summarizing complex content.",
-    llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
-)
+# agent2 = Agent(
+#     role="Predictor",
+#     goal="You will be given a description of the life story of a person and their decisions, you need to estimate the possibility of their death. The possibility of their death should increase as time goes by.",
+#     memory=True,
+#     backstory="A professional AI writer skilled in summarizing complex content.",
+#     llm=lambda prompt: query_groq("mixtral-8x7b", prompt)  # Using Groq's Mixtral model
+# )
 
 
 app = Flask(__name__)
@@ -40,52 +40,62 @@ media_path = "./deepseek_media"
 from flask_cors import CORS
 CORS(app)
 
-@app.route("/chat", methods=["POST"])
-def chat():
-    # Get JSON data from the request
-    data = request.get_json()
-    user_input = data.get("user_input")
+# @app.route("/chat", methods=["POST"])
+# def chat():
+#     # Get JSON data from the request
+#     data = request.get_json()
+#     user_input = data.get("user_input")
     
-    # Return an error if no input is provided
-    if not user_input:
-        return jsonify({"error": "No user input provided"}), 400
+#     # Return an error if no input is provided
+#     if not user_input:
+#         return jsonify({"error": "No user input provided"}), 400
 
-    # Send the user input to the llama model
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "system",
-                "content":"",
-            },
-            {
-                "role": "user",
-                "content": user_input,
-            }
-        ],
-        model="llama-3.3-70b-versatile",
-    )
+#     # Send the user input to the llama model
+#     chat_completion = client.chat.completions.create(
+#         messages=[
+#             {
+#                 "role": "system",
+#                 "content":"",
+#             },
+#             {
+#                 "role": "user",
+#                 "content": user_input,
+#             }
+#         ],
+#         model="llama-3.3-70b-versatile",
+#     )
     
-    # Return the response from the model as JSON
-    assistant_response = chat_completion.choices[0].message.content
-    return jsonify({"response": assistant_response})
+#     # Return the response from the model as JSON
+#     assistant_response = chat_completion.choices[0].message.content
+#     return jsonify({"response": assistant_response})
 
 @app.route("/generate_question", methods=["POST"])
 def generate_question():
     data = request.get_json()
     context = data.get("context", "")
-    system_prompt = data.get("sys_pmt", "")
+    # system_prompt = data.get("sys_pmt", "")
+    curStage = data.get("curStage", "")
+    curParameters = json.dumps(data.get("params",""))
     # Construct a prompt for the question-generating robot
-    prompt = f"Based on the following context, generate an engaging and clear question:\nContext: {context}"
+    prompt = (
+        f"current life stage: {curStage}\n"
+        f"Context: {context}\n"
+        f"params: {curParameters}\n"
+        "Please list each answer on a new line."
+    )
     
     try:
         chat_completion = client.chat.completions.create(
             messages=[
                 {
-                "role": "system",
-                "content":"",
+                    "role": "system",
+                    "content":"Based on the user’s life experience and the context provided, craft an engaging and clear question that reflects the user’s current life stage. Take into account the user’s age and relevant parameters, ensuring the question encourages thoughtful reflection while remaining concise and directly related to the given information.\n",
                 },
-                {"role": "user", "content": prompt}
-                ],
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
             model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
         )
         question = chat_completion.choices[0].message.content.strip()
@@ -103,55 +113,61 @@ def generate_choices():
     data = request.get_json()
     question = data.get("question")
     context = data.get("context", "")
-    system_prompt = data.get("sys_pmt", "")
+    # system_prompt = data.get("sys_pmt", "")
+    curStage = data.get("curStage", "")
+    curParameters = json.dumps(data.get("params",""))
     if not question:
         return jsonify({"error": "No question provided"}), 400
 
     # Construct a prompt for the choices-generating robot.
     # The prompt asks for 4 distinct answer choices.
     prompt = (
-        f"Generate 4 distinct answer choices for the following question:\n"
-        f"Question: '{question}'\n"
+        f"Current Life Stage: {curStage}\n"
         f"Context: {context}\n"
-        "Please list each answer on a new line."
+        f"Question: \"{question}\"\n"
+        f"Parameters (Health, Wealth, Intelligence): {curParameters}\n"
+        "Provide exactly four answer choices. Each choice should be on a new line, formatted as follows:\n"
+        "[Choice Text] | Effects: [Health Effect], [Wealth Effect], [Intelligence Effect]\n"
+        "Effect values should be integers between -2 and 2."
     )
     
     try:
         chat_completion = client.chat.completions.create(
             messages=[
                 {
-                "role": "system",
-                "content":"",
+                    "role": "system",
+                    "content":f"You are a playful life-simulator guide. Based on the user’s life context and question, generate exactly four life-changing choices for their current life stage. For each choice, include a potential effect value (ranging from -2 to 2) on the relevant parameters. Keep the tone imaginative and fun, but ensure the choices align with the context and parameters provided.:\n",
                 },
-                {"role": "user", "content": prompt}
-                ],
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
             model="llama-3.3-70b-versatile",
         )
         response_text = chat_completion.choices[0].message.content.strip()
-        print(f"Generated choices raw response: {response_text}")  # Debug output
+        print(f"Generated choices raw response:\n{response_text}")  # Debug output
 
-        # Process the returned text to extract individual choices.
-        lines = response_text.split("\n")
+        # **Parsing AI response into structured choices**
         choices = []
-        for line in lines:
+        for line in response_text.split("\n"):
             line = line.strip()
-            # Remove any numbering or bullet formatting if present
-            if line and (line[0].isdigit() or line.startswith("-")):
-                if "." in line:
-                    line = line.split(".", 1)[-1].strip()
-                elif "-" in line:
-                    line = line.split("-", 1)[-1].strip()
-            if line:
+            if line and "|" in line:  # Ensures format "[Choice Text] | Effects: [H, W, I]"
                 choices.append(line)
-        # Fallback: if not enough choices, try splitting by comma.
+
+        # Fallback: If AI didn't use "|", attempt to extract choices more flexibly
         if len(choices) < 4:
-            choices = [choice.strip() for choice in response_text.split(",") if choice.strip()]
+            choices = [line.strip() for line in response_text.split("\n") if line.strip()]
+
+        # **Ensure we return exactly 4 choices**
+        if len(choices) < 4:
+            return jsonify({"error": "Not enough valid choices generated", "raw_output": response_text}), 500
+
         return jsonify({"choices": choices[:4]})
+
     except Exception as e:
         print(f"Error generating choices: {str(e)}")
         return jsonify({"error": "Failed to generate choices"}), 500
-
-
 
 
 def delete_folder(folder_path):
