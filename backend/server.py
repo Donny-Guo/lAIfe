@@ -54,6 +54,10 @@ def chat():
     chat_completion = client.chat.completions.create(
         messages=[
             {
+                "role": "system",
+                "content":"",
+            },
+            {
                 "role": "user",
                 "content": user_input,
             }
@@ -69,12 +73,19 @@ def chat():
 def generate_question():
     data = request.get_json()
     context = data.get("context", "")
+    system_prompt = data.get("sys_pmt", "")
     # Construct a prompt for the question-generating robot
     prompt = f"Based on the following context, generate an engaging and clear question:\nContext: {context}"
     
     try:
         chat_completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {
+                "role": "system",
+                "content":"",
+                },
+                {"role": "user", "content": prompt}
+                ],
             model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
         )
         question = chat_completion.choices[0].message.content.strip()
@@ -92,7 +103,7 @@ def generate_choices():
     data = request.get_json()
     question = data.get("question")
     context = data.get("context", "")
-    
+    system_prompt = data.get("sys_pmt", "")
     if not question:
         return jsonify({"error": "No question provided"}), 400
 
@@ -107,7 +118,13 @@ def generate_choices():
     
     try:
         chat_completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {
+                "role": "system",
+                "content":"",
+                },
+                {"role": "user", "content": prompt}
+                ],
             model="llama-3.3-70b-versatile",
         )
         response_text = chat_completion.choices[0].message.content.strip()
@@ -223,20 +240,22 @@ def delete_sessions():
     finally:
         conn.close()
 
+
+import json
 # Save chat message
 @app.route("/save_chat", methods=["POST"])
 def save_chat():
     data = request.json
     session_id = data.get("session_id")
     question = data.get("question")
-    choices = data.get("choices")
+    choices = json.dumps(data.get("choices"))
     selection = data.get("selection")
     images = data.get("images", "")
     print(images)
 
     conn = sqlite3.connect("chat.db")
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO chat_history (session_id, question, choices, selection, image_base64) VALUES (?, ?, ?, ?)",
+    cursor.execute("INSERT INTO chat_history (session_id, question, choices, selection, image_base64) VALUES (?, ?, ?, ?, ?)",
                    (session_id, question, choices, selection, images))
     conn.commit()
     conn.close()
