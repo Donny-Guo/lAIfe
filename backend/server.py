@@ -89,7 +89,12 @@ def generate_question():
             messages=[
                 {
                     "role": "system",
-                    "content":"Based on the user’s life experience and the context provided, craft an engaging and clear question that reflects the user’s current life stage. Take into account the user’s age and relevant parameters, ensuring the question encourages thoughtful reflection while remaining concise and directly related to the given information.\n",
+                    "content":"""You are a playful life-simulator guide. Based on the user’s life experiences and the context provided, craft a concise, engaging question that reflects their 
+                                current life stage and parameters. This question must incorporate:
+                                A reference to at least one significant past experience or relationship from the user’s context (e.g., a childhood friend).
+                                A large-scale, externally driven event that significantly affects the user’s life but isn’t directly caused by them (e.g., war).
+                                For instance: ‘Your childhood best friend proposes marriage, but a war breaks out and threatens your community.’
+                                Ensure the question encourages thoughtful consideration of how personal choices intersect with broader circumstances outside the user’s control.\n""",
                 },
                 {
                     "role": "user", 
@@ -99,7 +104,7 @@ def generate_question():
             model="llama-3.3-70b-versatile",  # Change to the appropriate model if needed
         )
         question = chat_completion.choices[0].message.content.strip()
-        print(f"Generated question: {question}")  # For debugging/logging
+        # print(f"Generated question: {question}")  # For debugging/logging
         return jsonify({"question": question})
     except Exception as e:
         print(f"Error generating question: {str(e)}")
@@ -148,22 +153,29 @@ def generate_choices():
         response_text = chat_completion.choices[0].message.content.strip()
         print(f"Generated choices raw response:\n{response_text}")  # Debug output
 
-        # **Parsing AI response into structured choices**
+        # **Extracting choices and effects**
         choices = []
+        effects = []
+
         for line in response_text.split("\n"):
             line = line.strip()
-            if line and "|" in line:  # Ensures format "[Choice Text] | Effects: [H, W, I]"
-                choices.append(line)
+            if line and "|" in line:  
+                try:
+                    choice_text, effects_text = line.split("|")
+                    choice_text = choice_text.strip()
+                    effects_values = [int(x) for x in effects_text.replace("Effects:", "").strip().split(",")]
 
-        # Fallback: If AI didn't use "|", attempt to extract choices more flexibly
-        if len(choices) < 4:
-            choices = [line.strip() for line in response_text.split("\n") if line.strip()]
+                    if len(effects_values) == 3:  
+                        choices.append(choice_text)
+                        effects.append(effects_values)
+                except Exception as e:
+                    print(f"Error parsing line: {line}, Error: {e}")
 
-        # **Ensure we return exactly 4 choices**
+        # **Ensure we have exactly 4 valid choices**
         if len(choices) < 4:
             return jsonify({"error": "Not enough valid choices generated", "raw_output": response_text}), 500
 
-        return jsonify({"choices": choices[:4]})
+        return jsonify({"choices": choices[:4], "effects": effects[:4]})
 
     except Exception as e:
         print(f"Error generating choices: {str(e)}")

@@ -15,6 +15,7 @@ export default function Gamepage() {
     const [error, setError] = useState<string | null>(null);
     const [health, setHealth] = useState<number>(location.state?.health || "33");
     const [wealth, setWealth] = useState<number>(location.state?.wealth || "33");
+    const [paramsDiff, setParamsDiff] = useState<number[][]>([])  // array, value corresponding to [health, wealth, intelligence]
     const [intelligence, setIntelligence] = useState<number>(location.state?.intelligence || "33");
     const lifeStages = [
         "0 month - 3 yr",
@@ -63,6 +64,8 @@ export default function Gamepage() {
                     //     body: JSON.stringify({question: questionData.question, choices: choicesData.choices})
                     // })
                     setChoices(choicesData.choices);
+                    setParamsDiff(choicesData.effects);
+                    
                 } catch (err) {
                     setError("Could not load question. Please try again.");
                 } finally {
@@ -98,6 +101,9 @@ export default function Gamepage() {
 
             setHistory(prevHistory => [...prevHistory, choice]); // Store choice index (1-based)
             setStep(prevStep => prevStep + 1);
+            setHealth(health => health + paramsDiff[index][0])
+            setWealth(wealth => wealth + paramsDiff[index][1])
+            setIntelligence(intelligence => intelligence + paramsDiff[index][2])
         }
     };
 
@@ -109,6 +115,11 @@ export default function Gamepage() {
                 <p className="text-xl text-red-500">{error}</p>
             ) : (
                 <>
+                    <div className="mb-6 flex gap-4 text-lg font-semibold">
+                        <p className="text-red-500">❤️ Health: {health}</p>
+                        <p className="text-yellow-500">💰 Wealth: {wealth}</p>
+                        <p className="text-blue-500">🧠 Intelligence: {intelligence}</p>
+                    </div>
                     <h1 className="text-2xl font-semibold mb-6">{question}</h1>
                     {choices.map((choice, index) => (
                         <button
